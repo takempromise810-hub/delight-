@@ -1,3 +1,32 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-ai.js";
+
+// Your Firebase Configuration (delight-nursing)
+const firebaseConfig = {
+  apiKey: "AIzaSyCdWYE_9cCzoEhmK4RjHnoccsvXodBq96E",
+  authDomain: "delight-nursing.firebaseapp.com",
+  projectId: "delight-nursing",
+  storageBucket: "delight-nursing.firebasestorage.app",
+  messagingSenderId: "124143872414",
+  appId: "1:124143872414:web:d9d345bea133b20ff4ce8f",
+  measurementId: "G-9DRPWW3HEN"
+};
+
+// Initialize Firebase & Firebase AI Logic (Gemini Developer API)
+const firebaseApp = initializeApp(firebaseConfig);
+const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() });
+
+const SYSTEM_PROMPT = `You are Delight AI, an expert, supportive nursing and biomedical lecture tutor.
+Help the student understand anatomy, physiology, pathophysiology, pharmacology, clinical reporting (SBAR), and NCLEX-style reasoning.
+Keep answers clear, structured, accurate, and easy to study on a mobile screen. Use bullet points and highlight key nursing assessments, mechanisms of action, lab values, and clinical pearls.`;
+
+const model = getGenerativeModel(ai, {
+  model: "gemini-2.5-flash",
+  systemInstruction: SYSTEM_PROMPT
+});
+
+let chatSession = model.startChat();
+
 document.addEventListener("DOMContentLoaded", () => {
   const bubble = document.getElementById("aiFloatingBubble");
   const drawer = document.getElementById("aiDrawer");
@@ -7,9 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const openAiHeroBtn = document.getElementById("openAiHeroBtn");
   const aiForm = document.getElementById("aiForm");
   const aiInput = document.getElementById("aiInput");
+  const sendBtn = document.getElementById("sendBtn");
   const aiChatBody = document.getElementById("aiChatBody");
   const promptSuggestions = document.getElementById("promptSuggestions");
   const modeChips = document.querySelectorAll(".mode-chip");
+  const aiStatusDot = document.getElementById("aiStatusDot");
+  const aiStatusText = document.getElementById("aiStatusText");
 
   let activeMode = "explain";
   let isDragging = false;
@@ -19,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let initialLeft = 0;
   let initialTop = 0;
   let idleTimer = null;
+  let isGenerating = false;
 
   const EDGE_MARGIN = 10;
 
@@ -65,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // Pointer Events for smooth Dragging & Edge Snapping (Touch + Mouse)
+  // Pointer Events for smooth Dragging & Edge Snapping
   bubble.addEventListener("pointerdown", (e) => {
     isDragging = true;
     hasMoved = false;
@@ -113,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Keep bubble snapped on screen resize
   window.addEventListener("resize", () => {
     const rect = bubble.getBoundingClientRect();
     snapToEdge(rect.left, rect.top);
@@ -157,93 +189,113 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Reset Chat Session
   clearChatBtn.addEventListener("click", () => {
+    if (isGenerating) return;
     aiChatBody.querySelectorAll(".msg").forEach((m) => m.remove());
     promptSuggestions.classList.remove("hidden");
+    chatSession = model.startChat();
   });
 
   aiForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const text = aiInput.value.trim();
-    if (!text) return;
+    if (!text || isGenerating) return;
     aiInput.value = "";
     submitQuestion(text);
   });
 
-  function appendMessage(text, sender) {
+  // Safe lightweight Markdown formatter for AI replies
+  function formatMarkdown(raw) {
+    let safe = raw
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Bold **text**
+    safe = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    // Italic *text*
+    safe = safe.replace(/\*(.+?)\*/g, "<em>$1</em>");
+    // Bullet lines
+    safe = safe.replace(/^\s*[\*\-]\s+(.+)$/gm, "<li>$1</li>");
+    safe = safe.replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>");
+    // Line breaks
+    safe = safe.replace(/\n/g, "<br>");
+    safe = safe.replace(/<\/ul><br>/g, "</ul>");
+    return safe;
+  }
+
+  function appendMessage(text, sender, isError = false) {
     promptSuggestions.classList.add("hidden");
     const div = document.createElement("div");
-    div.className = `msg ${sender}`;
-    div.textContent = text;
+    div.className = `msg ${sender}${isError ? " error" : ""}`;
+    if (sender === "bot" && !isError) {
+      div.innerHTML = formatMarkdown(text);
+    } else {
+      div.textContent = text;
+    }
     aiChatBody.appendChild(div);
     aiChatBody.scrollTop = aiChatBody.scrollHeight;
+    return div;
   }
 
-  function submitQuestion(question) {
+  function showTypingIndicator() {
+    promptSuggestions.classList.add("hidden");
+    const div = document.createElement("div");
+    div.className = "msg bot";
+    div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    aiChatBody.appendChild(div);
+    aiChatBody.scrollTop = aiChatBody.scrollHeight;
+    return div;
+  }
+
+  function buildModePrompt(question) {
+    if (activeMode === "pharm") {
+      return `[Mode: Pharmacology Drug Card — cover Class, Mechanism of Action, Indications, Major Side Effects, and Priority Nursing Assessments/Patient Teaching]\n\n${question}`;
+    }
+    if (activeMode === "quiz") {
+      return `[Mode: NCLEX Practice Quiz — give a realistic nursing scenario question with 4 options (A-D) and wait for my choice before revealing the rationale unless I already answered]\n\n${question}`;
+    }
+    return question;
+  }
+
+  async function submitQuestion(question) {
+    if (isGenerating) return;
+    isGenerating = true;
+    sendBtn.disabled = true;
+    aiStatusDot.classList.add("busy");
+    aiStatusText.textContent = "Thinking...";
+
     appendMessage(question, "user");
+    const loaderBubble = showTypingIndicator();
 
-    setTimeout(() => {
-      const reply = generateNursingResponse(question, activeMode);
-      appendMessage(reply, "bot");
-    }, 350);
-  }
+    try {
+      const promptToSend = buildModePrompt(question);
+      const result = await chatSession.sendMessage(promptToSend);
+      const responseText = result.response.text();
 
-  function generateNursingResponse(q, mode) {
-    const lower = q.toLowerCase();
+      loaderBubble.remove();
+      appendMessage(responseText, "bot");
+    } catch (err) {
+      loaderBubble.remove();
+      console.error("Firebase AI Error:", err);
 
-    if (lower.includes("raas") || lower.includes("blood pressure")) {
-      return (
-        "💡 RAAS Pathway Breakdown:\n" +
-        "1. Low renal perfusion triggers kidneys to release Renin.\n" +
-        "2. Renin converts Angiotensinogen (from liver) → Angiotensin I.\n" +
-        "3. ACE (in lungs) converts Angiotensin I → Angiotensin II.\n" +
-        "4. Angiotensin II causes vasoconstriction & stimulates Aldosterone (Na+/H2O retention, K+ excretion), raising BP.\n\n" +
-        "🩺 Nursing Pearl: Watch for hyperkalemia and dry cough with ACE inhibitors."
-      );
+      let friendlyMsg = "⚠️ Could not reach Firebase AI. ";
+      const msg = (err && err.message) ? err.message : "";
+
+      if (msg.includes("PERMISSION_DENIED") || msg.includes("API") || msg.includes("403")) {
+        friendlyMsg += "Please make sure 'Firebase AI Logic' (Gemini Developer API) is enabled in your Firebase Console for project 'delight-nursing'.";
+      } else if (msg.includes("app-check") || msg.includes("AppCheck")) {
+        friendlyMsg += "Firebase App Check is enforced on your project. Either register your domain in App Check or unenforce App Check for AI Logic during testing.";
+      } else {
+        friendlyMsg += msg || "Check your internet connection and try again.";
+      }
+      appendMessage(friendlyMsg, "bot", true);
+    } finally {
+      isGenerating = false;
+      sendBtn.disabled = false;
+      aiStatusDot.classList.remove("busy");
+      aiStatusText.textContent = "Connected • delight-nursing";
     }
-
-    if (lower.includes("diuretic")) {
-      return (
-        "💊 Loop vs. Potassium-Sparing Diuretics:\n" +
-        "• Loop Diuretics (e.g., Furosemide): Act on the ascending Loop of Henle. High potency; cause K+ loss (hypokalemia). Monitor K+, BP, and ototoxicity.\n" +
-        "• K+-Sparing (e.g., Spironolactone): Block aldosterone in the distal tubule. Retain K+ (risk of hyperkalemia). Avoid salt substitutes."
-      );
-    }
-
-    if (lower.includes("abg") || lower.includes("acidosis")) {
-      return (
-        "🧪 Quick ABG Rule (ROME):\n" +
-        "• Normal Ranges: pH 7.35–7.45 | PaCO2 35–45 | HCO3 22–26\n" +
-        "• Respiratory Opposite: pH ↓ & PaCO2 ↑ = Respiratory Acidosis (e.g., COPD, hypoventilation).\n" +
-        "• Metabolic Equal: pH ↓ & HCO3 ↓ = Metabolic Acidosis (e.g., DKA, severe diarrhea)."
-      );
-    }
-
-    if (lower.includes("cirrhosis") || lower.includes("ascites")) {
-      return (
-        "🩺 Cirrhosis & Ascites Nursing Priorities:\n" +
-        "1. Patho link: Decreased hepatic albumin lowers plasma oncotic pressure, shifting fluid into the peritoneal cavity.\n" +
-        "2. Assessments: Daily weights, abdominal girth, I&Os, serum albumin, and ammonia (watch for hepatic encephalopathy).\n" +
-        "3. Interventions: Low-sodium diet, diuretics (spironolactone/furosemide), and albumin infusion post-paracentesis."
-      );
-    }
-
-    if (lower.includes("quiz") || lower.includes("nclex") || mode === "quiz") {
-      return (
-        "⚡ NCLEX Practice Check:\n" +
-        "A patient prescribed Furosemide 40 mg IV has a serum potassium of 2.9 mEq/L. What is the nurse's priority action?\n\n" +
-        "A) Administer the dose as scheduled\n" +
-        "B) Hold the medication and notify the provider\n" +
-        "C) Encourage foods low in potassium\n\n" +
-        "Answer: B — A K+ of 2.9 mEq/L indicates hypokalemia, increasing the risk of lethal dysrhythmias."
-      );
-    }
-
-    return (
-      `📘 Delight Study Note (${mode.toUpperCase()} Mode):\n` +
-      `You asked about: "${question}"\n\n` +
-      "• Core Concept: Break this topic into Mechanism → Clinical Manifestations → Priority Nursing Assessments.\n" +
-      "• Tip: You can paste your own lecture notes into app.js or connect a live AI API key when you're ready for full textbook Q&A!"
-    );
   }
 });

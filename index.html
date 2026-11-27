@@ -20,7 +20,6 @@
           </linearGradient>
         </defs>
         <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#lightGrad)" fill-opacity="0.16" stroke="url(#lightGrad)" stroke-width="2.5"/>
-        <!-- Light Beacon / Prism Rays -->
         <path d="M24 11V15M14.8 14.8L17.6 17.6M33.2 14.8L30.4 17.6" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
         <path d="M18 25C18 21.6863 20.6863 19 24 19C27.3137 19 30 21.6863 30 25C30 27.2 28.8 29.1 27 30.1V33H21V30.1C19.2 29.1 18 27.2 18 25Z" fill="url(#lightGrad)"/>
         <rect x="21" y="35" width="6" height="2.5" rx="1.25" fill="#38BDF8"/>
@@ -39,11 +38,11 @@
   <!-- Main Workspace -->
   <main class="container">
     <section class="hero-card">
-      <div class="hero-badge">Study Workspace</div>
+      <div class="hero-badge">Study Workspace • Live Firebase AI</div>
       <h2>Illuminate Complex Nursing Concepts</h2>
       <p>
         Organize your anatomy, physiology, pathophysiology, and pharmacology lectures in one clean space. 
-        Tap the floating <strong>Delight AI</strong> beacon on the edge of your screen anytime you need instant explanations or clinical breakdowns.
+        Tap the floating <strong>Delight AI</strong> beacon on the edge of your screen anytime for real-time clinical explanations, drug breakdowns, or NCLEX practice.
       </p>
       <div class="hero-actions">
         <button id="openAiHeroBtn" class="btn btn-primary">Ask Delight AI</button>
@@ -51,7 +50,7 @@
       </div>
     </section>
 
-    <!-- Starter Lecture Modules (Easy to expand later) -->
+    <!-- Starter Lecture Modules -->
     <section id="lectures" class="modules-section">
       <div class="section-header">
         <h3>Core Nursing Modules</h3>
@@ -106,14 +105,14 @@
   <aside id="aiDrawer" class="ai-drawer hidden" aria-label="Delight AI Panel">
     <div class="ai-drawer-header">
       <div class="ai-title-wrap">
-        <span class="status-dot"></span>
+        <span id="aiStatusDot" class="status-dot"></span>
         <div>
           <h3>Delight AI</h3>
-          <small>Nursing Study Assistant</small>
+          <small id="aiStatusText">Connected • delight-nursing</small>
         </div>
       </div>
       <div class="ai-header-actions">
-        <button id="clearChatBtn" class="icon-btn" title="Clear conversation">↺</button>
+        <button id="clearChatBtn" class="icon-btn" title="New conversation">↺</button>
         <button id="closeAiBtn" class="icon-btn" title="Close">✕</button>
       </div>
     </div>
@@ -122,25 +121,25 @@
     <div id="aiChatBody" class="ai-chat-body">
       <div class="ai-welcome">
         <p class="welcome-heading">What are we studying today?</p>
-        <p class="welcome-sub">Tap a starter prompt below or type any nursing topic, drug, or lecture question.</p>
+        <p class="welcome-sub">Ask any nursing, anatomy, pharmacology, or clinical question—or tap a starter prompt below.</p>
       </div>
 
       <!-- Prompt Suggestions -->
       <div id="promptSuggestions" class="prompt-list">
-        <button class="prompt-pill" data-prompt="Break down the Renin-Angiotensin-Aldosterone System (RAAS) step-by-step.">
+        <button class="prompt-pill" data-prompt="Break down the Renin-Angiotensin-Aldosterone System (RAAS) step-by-step with nursing pearls.">
           <span class="pill-ico">🫀</span> How does the RAAS pathway regulate blood pressure?
         </button>
-        <button class="prompt-pill" data-prompt="Explain the difference between loop diuretics and potassium-sparing diuretics.">
+        <button class="prompt-pill" data-prompt="Explain the difference between loop diuretics and potassium-sparing diuretics with nursing monitoring.">
           <span class="pill-ico">💊</span> Loop vs. Potassium-sparing diuretics?
         </button>
-        <button class="prompt-pill" data-prompt="How do I quickly interpret ABG results (pH, PaCO2, HCO3)?">
+        <button class="prompt-pill" data-prompt="How do I quickly interpret ABG results (pH, PaCO2, HCO3) using the ROME method?">
           <span class="pill-ico">🧪</span> Quick rules for interpreting ABGs?
         </button>
-        <button class="prompt-pill" data-prompt="What are the priority nursing assessments for a patient with liver cirrhosis and ascites?">
+        <button class="prompt-pill" data-prompt="What are the priority nursing assessments and pathophysiology for liver cirrhosis and ascites?">
           <span class="pill-ico">🩺</span> Priority nursing care for cirrhosis & ascites?
         </button>
-        <button class="prompt-pill" data-prompt="Create 3 NCLEX-style practice questions on pharmacology.">
-          <span class="pill-ico">📝</span> Quiz me with 3 NCLEX pharmacology questions
+        <button class="prompt-pill" data-prompt="Give me 3 NCLEX-style pharmacology questions one by one and wait for my answer first.">
+          <span class="pill-ico">📝</span> Quiz me with NCLEX pharmacology questions
         </button>
       </div>
     </div>
@@ -157,14 +156,14 @@
       <input
         type="text"
         id="aiInput"
-        placeholder="Ask Delight AI about your lecture..."
+        placeholder="Ask Delight AI anything about nursing..."
         autocomplete="off"
         required
       />
-      <button type="submit" class="send-btn" aria-label="Send">➤</button>
+      <button type="submit" id="sendBtn" class="send-btn" aria-label="Send">➤</button>
     </form>
   </aside>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
