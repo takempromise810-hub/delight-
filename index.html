@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delight — Nursing Lecture Companion</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="brand">
+      <!-- Custom SVG Light Logo -->
+      <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="lightGrad" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#38BDF8" />
+            <stop offset="55%" stop-color="#3B82F6" />
+            <stop offset="100%" stop-color="#F59E0B" />
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#lightGrad)" fill-opacity="0.16" stroke="url(#lightGrad)" stroke-width="2.5"/>
+        <!-- Light Beacon / Prism Rays -->
+        <path d="M24 11V15M14.8 14.8L17.6 17.6M33.2 14.8L30.4 17.6" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M18 25C18 21.6863 20.6863 19 24 19C27.3137 19 30 21.6863 30 25C30 27.2 28.8 29.1 27 30.1V33H21V30.1C19.2 29.1 18 27.2 18 25Z" fill="url(#lightGrad)"/>
+        <rect x="21" y="35" width="6" height="2.5" rx="1.25" fill="#38BDF8"/>
+      </svg>
+      <div>
+        <h1 class="brand-name">Delight</h1>
+        <span class="brand-tag">Nursing & Biomedical Hub</span>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#lectures" class="active">Lectures</a>
+    </nav>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="container">
+    <section class="hero-card">
+      <div class="hero-badge">Study Workspace</div>
+      <h2>Illuminate Complex Nursing Concepts</h2>
+      <p>
+        Organize your anatomy, physiology, pathophysiology, and pharmacology lectures in one clean space. 
+        Tap the floating <strong>Delight AI</strong> beacon on the edge of your screen anytime you need instant explanations or clinical breakdowns.
+      </p>
+      <div class="hero-actions">
+        <button id="openAiHeroBtn" class="btn btn-primary">Ask Delight AI</button>
+        <a href="#lectures" class="btn btn-secondary">Browse Modules</a>
+      </div>
+    </section>
+
+    <!-- Starter Lecture Modules (Easy to expand later) -->
+    <section id="lectures" class="modules-section">
+      <div class="section-header">
+        <h3>Core Nursing Modules</h3>
+        <span class="pill-count">4 Starter Tracks</span>
+      </div>
+
+      <div class="module-grid">
+        <article class="module-card accent-blue">
+          <div class="module-icon">🫀</div>
+          <h4>Anatomy & Physiology</h4>
+          <p>Cardiovascular, renal, respiratory, and neuro-cellular mechanisms made clear.</p>
+          <button class="module-ask-btn" data-prompt="Summarize the cardiac cycle and key electrolytes affecting myocardial contraction.">Ask AI about A&P →</button>
+        </article>
+
+        <article class="module-card accent-emerald">
+          <div class="module-icon">💊</div>
+          <h4>Pharmacology</h4>
+          <p>Drug classes, mechanisms of action, side effects, and nursing considerations.</p>
+          <button class="module-ask-btn" data-prompt="Compare beta-blockers and ACE inhibitors, including key nursing assessments before administration.">Ask AI about Pharm →</button>
+        </article>
+
+        <article class="module-card accent-amber">
+          <div class="module-icon">🩺</div>
+          <h4>Pathophysiology</h4>
+          <p>Fluid & electrolyte imbalances, acid-base disorders, and disease progression.</p>
+          <button class="module-ask-btn" data-prompt="Explain metabolic acidosis vs respiratory acidosis with ABG values and clinical causes.">Ask AI about Patho →</button>
+        </article>
+
+        <article class="module-card accent-cyan">
+          <div class="module-icon">📋</div>
+          <h4>Clinical Reporting & Care</h4>
+          <p>SBAR handoffs, patient assessment priorities, and nursing care plan frameworks.</p>
+          <button class="module-ask-btn" data-prompt="Give me a structured SBAR clinical handover template for an acute post-op patient.">Ask AI about Care →</button>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- Floating Edge-Snapping AI Bubble -->
+  <button id="aiFloatingBubble" class="ai-bubble snap-right idle" aria-label="Open Delight AI Assistant" title="Drag me along the edge or click to open AI">
+    <svg class="bubble-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="4" width="28" height="28" rx="9" fill="#FBBF24"/>
+      <circle cx="14" cy="16" r="2.2" fill="#0F172A"/>
+      <circle cx="22" cy="16" r="2.2" fill="#0F172A"/>
+      <path d="M14.5 21.5C15.8 23 20.2 23 21.5 21.5" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M27 7L28 9.5L30.5 10.5L28 11.5L27 14L26 11.5L23.5 10.5L26 9.5L27 7Z" fill="#0F172A"/>
+    </svg>
+  </button>
+
+  <!-- Slide-Up / Modal Delight AI Drawer -->
+  <div id="aiBackdrop" class="ai-backdrop hidden"></div>
+  <aside id="aiDrawer" class="ai-drawer hidden" aria-label="Delight AI Panel">
+    <div class="ai-drawer-header">
+      <div class="ai-title-wrap">
+        <span class="status-dot"></span>
+        <div>
+          <h3>Delight AI</h3>
+          <small>Nursing Study Assistant</small>
+        </div>
+      </div>
+      <div class="ai-header-actions">
+        <button id="clearChatBtn" class="icon-btn" title="Clear conversation">↺</button>
+        <button id="closeAiBtn" class="icon-btn" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div id="aiChatBody" class="ai-chat-body">
+      <div class="ai-welcome">
+        <p class="welcome-heading">What are we studying today?</p>
+        <p class="welcome-sub">Tap a starter prompt below or type any nursing topic, drug, or lecture question.</p>
+      </div>
+
+      <!-- Prompt Suggestions -->
+      <div id="promptSuggestions" class="prompt-list">
+        <button class="prompt-pill" data-prompt="Break down the Renin-Angiotensin-Aldosterone System (RAAS) step-by-step.">
+          <span class="pill-ico">🫀</span> How does the RAAS pathway regulate blood pressure?
+        </button>
+        <button class="prompt-pill" data-prompt="Explain the difference between loop diuretics and potassium-sparing diuretics.">
+          <span class="pill-ico">💊</span> Loop vs. Potassium-sparing diuretics?
+        </button>
+        <button class="prompt-pill" data-prompt="How do I quickly interpret ABG results (pH, PaCO2, HCO3)?">
+          <span class="pill-ico">🧪</span> Quick rules for interpreting ABGs?
+        </button>
+        <button class="prompt-pill" data-prompt="What are the priority nursing assessments for a patient with liver cirrhosis and ascites?">
+          <span class="pill-ico">🩺</span> Priority nursing care for cirrhosis & ascites?
+        </button>
+        <button class="prompt-pill" data-prompt="Create 3 NCLEX-style practice questions on pharmacology.">
+          <span class="pill-ico">📝</span> Quiz me with 3 NCLEX pharmacology questions
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Mode Chips -->
+    <div class="ai-mode-bar">
+      <button class="mode-chip active" data-mode="explain">💡 Explain</button>
+      <button class="mode-chip" data-mode="pharm">💊 Drug Card</button>
+      <button class="mode-chip" data-mode="quiz">⚡ Quick Quiz</button>
+    </div>
+
+    <!-- Input Bar -->
+    <form id="aiForm" class="ai-input-bar">
+      <input
+        type="text"
+        id="aiInput"
+        placeholder="Ask Delight AI about your lecture..."
+        autocomplete="off"
+        required
+      />
+      <button type="submit" class="send-btn" aria-label="Send">➤</button>
+    </form>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
