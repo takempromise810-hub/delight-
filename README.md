@@ -1,1 +1,1 @@
-iys for studies only
+its for studies only
