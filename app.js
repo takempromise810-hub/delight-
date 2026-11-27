@@ -1,6 +1,7 @@
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const STORAGE_KEY = "delight_groq_api_key";
+const DEFAULT_BUBBLE_PROMPT = "Let's discuss nursing concepts—what lecture topic, drug, or clinical scenario would you like to explore right now?";
 
 const SYSTEM_PROMPT = `You are Delight AI, an expert, supportive nursing and biomedical lecture tutor.
 Help the student understand anatomy, physiology, pathophysiology, pharmacology, clinical reporting (SBAR), and NCLEX-style reasoning.
@@ -117,6 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  function triggerDiscussion(promptText) {
+    const resolvedPrompt = (promptText || DEFAULT_BUBBLE_PROMPT).trim();
+    openDrawer(resolvedPrompt);
+  }
+
   bubble.addEventListener("pointerdown", (e) => {
     isDragging = true;
     hasMoved = false;
@@ -154,13 +160,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isDragging) return;
     isDragging = false;
     bubble.classList.remove("dragging");
-    bubble.releasePointerCapture(e.pointerId);
+    if (bubble.hasPointerCapture && bubble.hasPointerCapture(e.pointerId)) {
+      bubble.releasePointerCapture(e.pointerId);
+    }
 
     if (hasMoved) {
       const rect = bubble.getBoundingClientRect();
       snapToEdge(rect.left, rect.top);
     } else {
-      openDrawer();
+      triggerDiscussion(bubble.dataset.prompt);
+    }
+  });
+
+  bubble.addEventListener("click", (e) => {
+    // Fallback for keyboard activation or browsers without pointerup tap handling
+    if (e.detail === 0 && !hasMoved) {
+      triggerDiscussion(bubble.dataset.prompt);
     }
   });
 
@@ -187,7 +202,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   closeAiBtn.addEventListener("click", closeDrawer);
   backdrop.addEventListener("click", closeDrawer);
-  openAiHeroBtn.addEventListener("click", () => openDrawer());
+  openAiHeroBtn.addEventListener("click", () => {
+    triggerDiscussion(openAiHeroBtn.dataset.prompt);
+  });
 
   modeChips.forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -200,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".prompt-pill, .module-ask-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.dataset.prompt;
-      openDrawer(prompt);
+      triggerDiscussion(prompt);
     });
   });
 

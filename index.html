@@ -42,10 +42,10 @@
       <h2>Illuminate Complex Nursing Concepts</h2>
       <p>
         Organize your anatomy, physiology, pathophysiology, and pharmacology lectures in one clean space.
-        Tap the floating <strong>Delight AI</strong> beacon on the edge of your screen anytime for real-time clinical explanations, drug breakdowns, or NCLEX practice.
+        Tap the floating <strong>Delight AI</strong> beacon on the edge of your screen anytime to jump straight into an AI discussion, drug breakdown, or NCLEX practice.
       </p>
       <div class="hero-actions">
-        <button id="openAiHeroBtn" class="btn btn-primary">Ask Delight AI</button>
+        <button id="openAiHeroBtn" class="btn btn-primary" data-prompt="Let's start a nursing lecture discussion—what key topic, pathophysiology mechanism, or drug class should we review first?">Discuss with AI</button>
         <a href="#lectures" class="btn btn-secondary">Browse Modules</a>
       </div>
     </section>
@@ -62,35 +62,35 @@
           <div class="module-icon">🫀</div>
           <h4>Anatomy & Physiology</h4>
           <p>Cardiovascular, renal, respiratory, and neuro-cellular mechanisms made clear.</p>
-          <button class="module-ask-btn" data-prompt="Summarize the cardiac cycle and key electrolytes affecting myocardial contraction.">Ask AI about A&P →</button>
+          <button class="module-ask-btn" data-prompt="Summarize the cardiac cycle and key electrolytes affecting myocardial contraction.">Discuss with AI →</button>
         </article>
 
         <article class="module-card accent-emerald">
           <div class="module-icon">💊</div>
           <h4>Pharmacology</h4>
           <p>Drug classes, mechanisms of action, side effects, and nursing considerations.</p>
-          <button class="module-ask-btn" data-prompt="Compare beta-blockers and ACE inhibitors, including key nursing assessments before administration.">Ask AI about Pharm →</button>
+          <button class="module-ask-btn" data-prompt="Compare beta-blockers and ACE inhibitors, including key nursing assessments before administration.">Discuss with AI →</button>
         </article>
 
         <article class="module-card accent-amber">
           <div class="module-icon">🩺</div>
           <h4>Pathophysiology</h4>
           <p>Fluid & electrolyte imbalances, acid-base disorders, and disease progression.</p>
-          <button class="module-ask-btn" data-prompt="Explain metabolic acidosis vs respiratory acidosis with ABG values and clinical causes.">Ask AI about Patho →</button>
+          <button class="module-ask-btn" data-prompt="Explain metabolic acidosis vs respiratory acidosis with ABG values and clinical causes.">Discuss with AI →</button>
         </article>
 
         <article class="module-card accent-cyan">
           <div class="module-icon">📋</div>
           <h4>Clinical Reporting & Care</h4>
           <p>SBAR handoffs, patient assessment priorities, and nursing care plan frameworks.</p>
-          <button class="module-ask-btn" data-prompt="Give me a structured SBAR clinical handover template for an acute post-op patient.">Ask AI about Care →</button>
+          <button class="module-ask-btn" data-prompt="Give me a structured SBAR clinical handover template for an acute post-op patient.">Discuss with AI →</button>
         </article>
       </div>
     </section>
   </main>
 
   <!-- Floating Edge-Snapping AI Bubble -->
-  <button id="aiFloatingBubble" class="ai-bubble snap-right idle" aria-label="Open Delight AI Assistant" title="Drag me along the edge or click to open AI">
+  <button id="aiFloatingBubble" class="ai-bubble snap-right idle" data-prompt="Let's discuss nursing concepts—what lecture topic, drug, or clinical scenario would you like to explore right now?" aria-label="Discuss with Delight AI" title="Tap to discuss with AI or drag along the edge">
     <svg class="bubble-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="4" y="4" width="28" height="28" rx="9" fill="#FBBF24"/>
       <circle cx="14" cy="16" r="2.2" fill="#0F172A"/>
