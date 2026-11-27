@@ -1,31 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-ai.js";
-
-// Your Firebase Configuration (delight-nursing)
-const firebaseConfig = {
-  apiKey: "AIzaSyCdWYE_9cCzoEhmK4RjHnoccsvXodBq96E",
-  authDomain: "delight-nursing.firebaseapp.com",
-  projectId: "delight-nursing",
-  storageBucket: "delight-nursing.firebasestorage.app",
-  messagingSenderId: "124143872414",
-  appId: "1:124143872414:web:d9d345bea133b20ff4ce8f",
-  measurementId: "G-9DRPWW3HEN"
-};
-
-// Initialize Firebase & Firebase AI Logic (Gemini Developer API)
-const firebaseApp = initializeApp(firebaseConfig);
-const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() });
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "openai/gpt-oss-120b";
+const STORAGE_KEY = "delight_groq_api_key";
 
 const SYSTEM_PROMPT = `You are Delight AI, an expert, supportive nursing and biomedical lecture tutor.
 Help the student understand anatomy, physiology, pathophysiology, pharmacology, clinical reporting (SBAR), and NCLEX-style reasoning.
 Keep answers clear, structured, accurate, and easy to study on a mobile screen. Use bullet points and highlight key nursing assessments, mechanisms of action, lab values, and clinical pearls.`;
-
-const model = getGenerativeModel(ai, {
-  model: "gemini-2.5-flash",
-  systemInstruction: SYSTEM_PROMPT
-});
-
-let chatSession = model.startChat();
 
 document.addEventListener("DOMContentLoaded", () => {
   const bubble = document.getElementById("aiFloatingBubble");
@@ -42,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modeChips = document.querySelectorAll(".mode-chip");
   const aiStatusDot = document.getElementById("aiStatusDot");
   const aiStatusText = document.getElementById("aiStatusText");
+  const headerActions = document.querySelector(".ai-header-actions");
 
   let activeMode = "explain";
   let isDragging = false;
@@ -52,10 +32,49 @@ document.addEventListener("DOMContentLoaded", () => {
   let initialTop = 0;
   let idleTimer = null;
   let isGenerating = false;
+  let conversationHistory = [];
 
   const EDGE_MARGIN = 10;
 
-  // Restore saved edge position if available
+  const keyBtn = document.createElement("button");
+  keyBtn.type = "button";
+  keyBtn.id = "setApiKeyBtn";
+  keyBtn.className = "icon-btn";
+  keyBtn.title = "Set Groq API Key";
+  keyBtn.textContent = "🔑";
+  headerActions.prepend(keyBtn);
+
+  function getApiKey() {
+    return (localStorage.getItem(STORAGE_KEY) || "").trim();
+  }
+
+  function refreshStatus() {
+    const hasKey = Boolean(getApiKey());
+    aiStatusText.textContent = hasKey
+      ? "Ready • Groq (This Device)"
+      : "Tap 🔑 to add Groq API key";
+  }
+
+  function promptForApiKey() {
+    const current = getApiKey();
+    const entered = window.prompt(
+      "Paste your Groq API key (gsk_...) — saved locally in this browser on your device:",
+      current
+    );
+    if (entered !== null) {
+      const cleaned = entered.trim();
+      if (cleaned) {
+        localStorage.setItem(STORAGE_KEY, cleaned);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      refreshStatus();
+    }
+  }
+
+  keyBtn.addEventListener("click", promptForApiKey);
+  refreshStatus();
+
   const savedPos = JSON.parse(localStorage.getItem("delight_ai_bubble_pos") || "null");
   if (savedPos) {
     applyClampedPosition(savedPos.left, savedPos.top, savedPos.side);
@@ -98,7 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // Pointer Events for smooth Dragging & Edge Snapping
   bubble.addEventListener("pointerdown", (e) => {
     isDragging = true;
     hasMoved = false;
@@ -151,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
     snapToEdge(rect.left, rect.top);
   });
 
-  // Drawer Controls
   function openDrawer(prefillPrompt = "") {
     drawer.classList.remove("hidden");
     backdrop.classList.remove("hidden");
@@ -172,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
   backdrop.addEventListener("click", closeDrawer);
   openAiHeroBtn.addEventListener("click", () => openDrawer());
 
-  // Mode Chips
   modeChips.forEach((chip) => {
     chip.addEventListener("click", () => {
       modeChips.forEach((c) => c.classList.remove("active"));
@@ -181,7 +197,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Prompt Suggestion Clicks & Module Quick-Ask Buttons
   document.querySelectorAll(".prompt-pill, .module-ask-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.dataset.prompt;
@@ -189,12 +204,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Reset Chat Session
   clearChatBtn.addEventListener("click", () => {
     if (isGenerating) return;
     aiChatBody.querySelectorAll(".msg").forEach((m) => m.remove());
     promptSuggestions.classList.remove("hidden");
-    chatSession = model.startChat();
+    conversationHistory = [];
   });
 
   aiForm.addEventListener("submit", (e) => {
@@ -205,21 +219,16 @@ document.addEventListener("DOMContentLoaded", () => {
     submitQuestion(text);
   });
 
-  // Safe lightweight Markdown formatter for AI replies
   function formatMarkdown(raw) {
     let safe = raw
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-    // Bold **text**
     safe = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    // Italic *text*
     safe = safe.replace(/\*(.+?)\*/g, "<em>$1</em>");
-    // Bullet lines
     safe = safe.replace(/^\s*[\*\-]\s+(.+)$/gm, "<li>$1</li>");
     safe = safe.replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>");
-    // Line breaks
     safe = safe.replace(/\n/g, "<br>");
     safe = safe.replace(/<\/ul><br>/g, "</ul>");
     return safe;
@@ -261,6 +270,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function submitQuestion(question) {
     if (isGenerating) return;
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      appendMessage("Tap the 🔑 icon at the top of Delight AI to enter your Groq API key first.", "bot", true);
+      return;
+    }
+
     isGenerating = true;
     sendBtn.disabled = true;
     aiStatusDot.classList.add("busy");
@@ -269,33 +285,53 @@ document.addEventListener("DOMContentLoaded", () => {
     appendMessage(question, "user");
     const loaderBubble = showTypingIndicator();
 
-    try {
-      const promptToSend = buildModePrompt(question);
-      const result = await chatSession.sendMessage(promptToSend);
-      const responseText = result.response.text();
+    const promptToSend = buildModePrompt(question);
+    const nextMessages = [
+      ...conversationHistory,
+      { role: "user", content: promptToSend }
+    ];
 
+    try {
+      const response = await fetch(GROQ_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          temperature: 0.5,
+          max_tokens: 1024,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...nextMessages
+          ]
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        const errDetail = data?.error?.message || `HTTP ${response.status}`;
+        throw new Error(errDetail);
+      }
+
+      const replyText = (data?.choices?.[0]?.message?.content || "").trim();
       loaderBubble.remove();
-      appendMessage(responseText, "bot");
+      appendMessage(replyText || "No response text returned.", "bot");
+
+      conversationHistory = nextMessages.concat([
+        { role: "assistant", content: replyText }
+      ]);
     } catch (err) {
       loaderBubble.remove();
-      console.error("Firebase AI Error:", err);
-
-      let friendlyMsg = "⚠️ Could not reach Firebase AI. ";
-      const msg = (err && err.message) ? err.message : "";
-
-      if (msg.includes("PERMISSION_DENIED") || msg.includes("API") || msg.includes("403")) {
-        friendlyMsg += "Please make sure 'Firebase AI Logic' (Gemini Developer API) is enabled in your Firebase Console for project 'delight-nursing'.";
-      } else if (msg.includes("app-check") || msg.includes("AppCheck")) {
-        friendlyMsg += "Firebase App Check is enforced on your project. Either register your domain in App Check or unenforce App Check for AI Logic during testing.";
-      } else {
-        friendlyMsg += msg || "Check your internet connection and try again.";
-      }
-      appendMessage(friendlyMsg, "bot", true);
+      console.error("Groq API Error:", err);
+      const msg = err && err.message ? err.message : "Check your Groq API key and connection.";
+      appendMessage(`⚠️ Could not reach Groq: ${msg}`, "bot", true);
     } finally {
       isGenerating = false;
       sendBtn.disabled = false;
       aiStatusDot.classList.remove("busy");
-      aiStatusText.textContent = "Connected • delight-nursing";
+      refreshStatus();
     }
   }
 });
